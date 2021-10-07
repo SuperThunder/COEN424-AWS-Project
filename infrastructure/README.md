@@ -1,8 +1,6 @@
 # Welcome to your LandingPage repository!
 
-## How to build and deploy it
 
-Check our workshop [Activate workshop](https://activate.workshop.aws/030_landingpage.html)
 
 ## How was it built
 
@@ -30,6 +28,7 @@ Here we leveraged the [create-react-app](https://create-react-app.dev/) utility 
 
     Navigate to [http://localhost:3000](http://localhost:3000) to see the spinning React Logo.
 
+![initial react app](/images/040_landingPage/react-init-app.png)
 
 In the next steps we add a styling lib and add simple feedback form to the website.
 
@@ -279,72 +278,72 @@ We created a stack with the backend API. The API is hosted in API Gateway, behin
     $ npm i @aws-cdk/aws-lambda @aws-cdk/aws-dynamodb @aws-cdk/aws-apigateway
     ```
 
-1. create the `surveyService` folder
-    ```
-    mkdir surveyService
-    ```
-
-1. Create the file `lib/surveyService/survey-service-stack.ts` and add the code for the backend API:
+1. Created the file `lib/backend-stack.ts` and add the code for the backend API:
 
 
     ```typescript
-    import * as cdk from "@aws-cdk/core";
-    import * as lambda from "@aws-cdk/aws-lambda";
-    import * as apiGateway from "@aws-cdk/aws-apigateway";
-    import * as dynamo from "@aws-cdk/aws-dynamodb";
-    import { Code, Runtime } from "@aws-cdk/aws-lambda";
-    import { TableEncryption } from "@aws-cdk/aws-dynamodb";
-    import { RemovalPolicy } from "@aws-cdk/core";
+    import * as cdk from '@aws-cdk/core';
+    import * as lambda from '@aws-cdk/aws-lambda'
+    import * as apiGateway from '@aws-cdk/aws-apigateway'
+    import * as dynamo from '@aws-cdk/aws-dynamodb'
+    import { Code, Runtime } from '@aws-cdk/aws-lambda';
+    import { TableEncryption } from '@aws-cdk/aws-dynamodb';
+    import { Stack, StackProps, RemovalPolicy, CfnOutput } from '@aws-cdk/core';
 
 
-    interface SurveyServiceStackProps extends cdk.NestedStackProps {
-        siteDistributionDomainName: string;
+    interface BackendStackProps extends StackProps {
+        frontendUrl: string;
     }
 
-    export class SurveyServiceStack extends cdk.NestedStack {
-    public readonly api: apiGateway.RestApi;
+    export class BackendStack extends Stack {
+      public readonly api: apiGateway.RestApi;
+      
+      constructor(scope: cdk.Construct, id: string, props: BackendStackProps) {
+        super(scope, id, props);
 
-    constructor(scope: cdk.Construct, id: string, props: SurveyServiceStackProps) {
-        super(scope, id);
+        // Create the API Gateway
+        this.api = new apiGateway.RestApi(this, 'LandingPageAPI', {
+          restApiName: 'Landing Page API',
+          description: 'Handles the request from the landing page.'
+        })
 
-        // Create the Dynamo DB table
-        const tableName = `Feedbacks-${this.node.addr}`;
+        // Create the Database
+        const tableName = 'Feedbacks'
 
-        const feedbacksTable = new dynamo.Table(this, "Feedbacks", {
-            tableName: tableName,
-            encryption: TableEncryption.AWS_MANAGED,
-            partitionKey: { name: "Key", type: dynamo.AttributeType.STRING },
-            removalPolicy: RemovalPolicy.DESTROY,
-        });
+        const landingPageTable = new dynamo.Table(this, 'LandingPageInput', {
+          tableName: tableName,
+          encryption: TableEncryption.AWS_MANAGED,
+          partitionKey: { name: 'Key', type: dynamo.AttributeType.STRING },
+          removalPolicy: RemovalPolicy.DESTROY
+        })
 
-        // Create the Lambda with the business logic for CRUD action on the Feedback DynamoDB Table
-        const handler = new lambda.Function(this, "LandingPageForm", {
-            runtime: Runtime.NODEJS_12_X,
-            code: Code.fromAsset(`${__dirname}/lambda`),
-            handler: "index.handler",
-            environment: {
-                TABLE_NAME: tableName,
-                Access_Control_Allow_Origin: `https://${props.siteDistributionDomainName}`,
-            },
-        });
+        // Create the Lambda in charge of translating the http request to a database query
+        const handler = new lambda.Function(this, 'LandingPageForm', {
+          runtime: Runtime.NODEJS_12_X,
+          code: Code.fromAsset(`${__dirname}/lambda`),
+          handler: 'index.handler',
+          environment: {
+            'TABLE_NAME': tableName,
+            'FRONTEND_URL': props.frontendUrl,
+          }
+        })
 
-        landingPageTable.grantWriteData(handler);
+        // Allow the lambda to access the database
+        landingPageTable.grantWriteData(handler)
 
-        // Create the API Gateway instance
-        this.api = new apiGateway.RestApi(this, "LandingPageAPI", {
-            restApiName: "Landing Page API",
-            description: "Handles the request from the landing page.",
-        });
-
-        // Link
+        // Link the lambda to the REST API
         const lambdaIntegration = new apiGateway.LambdaIntegration(handler, {
-            requestTemplates: { "application/json": '{ "statusCode": "200" }' },
+          requestTemplates: { 'application/json': '{ "statusCode": "200" }'},
+        })
+        const feedback = this.api.root.addResource('feedback')
+        feedback.addMethod('POST', lambdaIntegration)
+
+        // Display REST API url  
+        new CfnOutput(this, "FrontendJSONConfig", {
+          value: `{ "apiUrl": "${this.api.url}" }`,
+          description: "Config file (in json format) for frontend"
         });
-
-        const feedback = this.api.root.addResource("feedback");
-
-        feedback.addMethod("POST", lambdaIntegration);
-    }
+      }
     }
     ```
 1. Updated the `lib/infrastructure-stack.ts` to add the newly created backend part of the infrastructure:
