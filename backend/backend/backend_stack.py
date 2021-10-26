@@ -81,7 +81,7 @@ class BackendStack(cdk.Stack):
 
 
         # Master user for opensearch
-        #opensearch_master_user = iam.User(self, 'opensearch-master-user', user_name='opensearch-master')
+        opensearch_master_user = iam.User(self, 'opensearch-master-user', user_name='opensearch-master')
 
         # Cognito user and identity pool
         opensearch_cognito_userpool = cognito.UserPool(self, app_prefix+'userpool', user_pool_name='opensearch-userpool',
@@ -142,20 +142,22 @@ class BackendStack(cdk.Stack):
         opensearch_domain = opensearch.Domain(self, os_domain_name, version=opensearch.EngineVersion.OPENSEARCH_1_0,
                                               capacity=opensearch.CapacityConfig(data_nodes=1, data_node_instance_type='t3.small.search'),
                                               ebs=opensearch.EbsOptions(volume_size=10),
-                                              logging=opensearch.LoggingOptions(app_log_enabled=False, slow_search_log_enabled=False, slow_index_log_enabled=False),
+                                              #logging=opensearch.LoggingOptions(app_log_enabled=False, slow_search_log_enabled=False, slow_index_log_enabled=False),
                                               node_to_node_encryption=True,
                                               encryption_at_rest=opensearch.EncryptionAtRestOptions(enabled=True),
                                               enforce_https=True,
                                               access_policies=[iam.PolicyStatement(effect=iam.Effect.ALLOW, actions=["es:ESHttp*"], principals=[iam.AnyPrincipal], resources=[opensearch_domain_arn])],
                                               cognito_dashboards_auth=opensearch.CognitoOptions(identity_pool_id=opensearch_cognito_identitypool.ref,
                                                                                                 role=opensearch_cognito_service_role, user_pool_id=opensearch_cognito_userpool.user_pool_id),
-                                              fine_grained_access_control=opensearch.AdvancedSecurityOptions(master_user_arn=opensearch_lambda_service_role.role_arn)
-                                              #fine_grained_access_control=opensearch.AdvancedSecurityOptions(master_user_arn=opensearch_master_user.user_arn),
+                                              #fine_grained_access_control=opensearch.AdvancedSecurityOptions(master_user_arn=opensearch_lambda_service_role.role_arn)
+                                              fine_grained_access_control=opensearch.AdvancedSecurityOptions(master_user_arn=opensearch_master_user.user_arn),
                                             )
         # Grant read permission to the GET lambda, read-write to the POST lambda
         # todo: may need to specify a particular path in the domain
         opensearch_domain.grant_read_write(lambda_network_submit)
         opensearch_domain.grant_read(lambda_network_search)
+
+        opensearch_distro_config = opensearch
 
         # opensearch related docs:
         # setting permissions in CDK: https://docs.aws.amazon.com/cdk/api/latest/docs/aws-opensearchservice-readme.html#permissions
