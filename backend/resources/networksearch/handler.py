@@ -7,7 +7,7 @@ import json
 # Then return the results back
 
 def lambda_handler(event, context):
-    print('Request body', event['body'])
+    print('Request body', event['headers'])
 
     response = {
         'statusCode': 418,
