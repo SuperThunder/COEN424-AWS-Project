@@ -10,7 +10,7 @@ def lambda_handler(event, context):
     print('Request body', event['headers'])
 
     response = {
-        'statusCode': 418,
+        'statusCode': 200,
         'headers': {
             'Access-Control-Allow-Origin': '*',
             'Content-Type': 'application/json'
