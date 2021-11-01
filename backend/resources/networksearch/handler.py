@@ -15,7 +15,7 @@ def lambda_handler(event, context):
             'Access-Control-Allow-Origin': '*',
             'Content-Type': 'application/json'
         },
-        'body': '{SEARCH}',
+        'body': '{SEARCH (GET)}',
         'isBase64Encoded': False
     }
 

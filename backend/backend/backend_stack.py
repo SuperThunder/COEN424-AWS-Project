@@ -21,7 +21,7 @@ class BackendStack(cdk.Stack):
         # API Gateway for the backend
         # TODO COGNITO AUTH FROM THE FRONT END FOR GATEWAYS
         api = apigateway.RestApi(self, 'network-search-api-424-project', rest_api_name='424 Project Network Search',
-                                        description='Search for WiFi Networks',
+                                        description='Search / Submit WiFi Networks',
                                         )
         api_networks = api.root.add_resource('networks')
 

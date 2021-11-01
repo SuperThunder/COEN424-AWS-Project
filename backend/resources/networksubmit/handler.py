@@ -18,7 +18,7 @@ def lambda_handler(event, context):
             'Access-Control-Allow-Origin': '*',
             'Content-Type': 'application/json'
         },
-        'body': '{GET}',
+        'body': '{SUBMIT WIFI NETWORK (POST)}',
         'isBase64Encoded': False
     }
 
