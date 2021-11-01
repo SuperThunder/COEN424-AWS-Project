@@ -38,7 +38,7 @@ class BackendStack(cdk.Stack):
         # ^??????
         network_search_request_template = {"application/json": '{ "statusCode": "200" }'}
 
-        network_search_integration = apigateway.LambdaIntegration(lambda_network_search, request_templates=network_search_request_template)
+        network_search_integration = apigateway.LambdaIntegration(lambda_network_search)
         api_networks.add_method('GET', network_search_integration)
 
 
@@ -57,7 +57,7 @@ class BackendStack(cdk.Stack):
         # ^??????
         network_submit_request_template = {"application/json": '{ "statusCode": "200" }'}
 
-        network_submit_integration = apigateway.LambdaIntegration(lambda_network_submit, request_templates=network_submit_request_template)
+        network_submit_integration = apigateway.LambdaIntegration(lambda_network_submit)
 
         api_networks.add_method('POST', network_submit_integration)
 
