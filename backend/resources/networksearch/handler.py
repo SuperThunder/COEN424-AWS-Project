@@ -31,6 +31,7 @@ search_url = index_url + '_search'
 
 def lambda_handler(event, context):
     print('Request headers', event['headers'])
+    print('Request params', event['queryStringParameters'])
     print('Search URL: ', search_url)
 
     # response template
@@ -44,32 +45,34 @@ def lambda_handler(event, context):
         'isBase64Encoded': False
     }
 
-    # Required headers
-    required_headers = ['radius', 'lat', 'lon']
-    for h in required_headers:
-        if not h in event['headers'].keys():
-            response['body'] = 'Error: {p} param missing'.format(p=h)
+    req_params = event['queryStringParameters']
+
+    # Required parameters
+    required_params = ['radius', 'lat', 'lon']
+    for param in required_params:
+        if param not in req_params.keys():
+            response['body'] = 'Error: {p} param missing'.format(p=param)
             response['statusCode'] = 400
             return response
 
     # lat/lon must be valid floats
     try:
-        lat_f = float(event['headers']['lat'])
-        lon_f = float(event['headers']['lon'])
+        lat_f = float(req_params['lat'])
+        lon_f = float(req_params['lon'])
     except:
         response['body'] = 'Error: non-float lat/lon'
         response['statusCode'] = 400
 
     # radius must be valid int
     try:
-        req_geo_radius = int(event['headers']['radius'])
+        req_geo_radius = int(req_params['radius'])
     except:
         response['body'] = 'Error: non-int radius'
         response['statusCode'] = 400
         return response
 
     # radius must be >0, < maximum specified in config
-    geo_radius_max = os.environ['GEO_RADIUS_LIMIT_METRE']
+    geo_radius_max = int(os.environ['GEO_RADIUS_LIMIT_METRE'])
     if (req_geo_radius <= 0 or req_geo_radius > geo_radius_max):
         response['body'] = 'Radius must be at least 0 and less than {ub}'.format(ub=geo_radius_max)
         response['statusCode'] = 400
@@ -84,10 +87,10 @@ def lambda_handler(event, context):
                 },
                 "filter": {
                     "geo_distance": {
-                        "distance": "3000m",
+                        "distance": str(req_geo_radius)+'m',
                         "location": {
-                            "lat": 45.49,
-                            "lon": -73.57
+                            "lat": lat_f,
+                            "lon": lon_f
                         }
                     }
                 }
