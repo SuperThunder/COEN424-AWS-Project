@@ -11,8 +11,8 @@ from requests_aws4auth import AWS4Auth
 
 # https://docs.aws.amazon.com/opensearch-service/latest/developerguide/search-example.html
 opensearch_url = os.environ['OPENSEARCH_URL']
-#region = os.environ['AWS_REGION']
-#service = 'es'
+# region = os.environ['AWS_REGION']
+# service = 'es'
 
 # credentials = boto3.Session().get_credentials()
 # awsauth = AWS4Auth(credentials.access_key, credentials.secret_key, region, service, session_token=credentials.token)
@@ -70,24 +70,25 @@ def lambda_handler(event, context):
 
     # radius must be >0, < maximum specified in config
     geo_radius_max = os.environ['GEO_RADIUS_LIMIT_METRE']
-    if(req_geo_radius <= 0 or req_geo_radius > geo_radius_max):
+    if (req_geo_radius <= 0 or req_geo_radius > geo_radius_max):
         response['body'] = 'Radius must be at least 0 and less than {ub}'.format(ub=geo_radius_max)
         response['statusCode'] = 400
         return response
 
     query_size_limit = int(os.environ['OPENSEARCH_GET_WIFI_NETWORK_LIMIT'])
     query = {
-        "size": query_size_limit,
-        "bool": {
-            "must": {
-                "match_all": {}
-            },
-            "filter": {
-                "geo_distance": {
-                    "distance": req_geo_radius,
-                    "location": {
-                        "lat": 45.49,
-                        "lon": -73.57
+        "query": {
+            "bool": {
+                "must": {
+                    "match_all": {}
+                },
+                "filter": {
+                    "geo_distance": {
+                        "distance": "3000m",
+                        "location": {
+                            "lat": 45.49,
+                            "lon": -73.57
+                        }
                     }
                 }
             }
