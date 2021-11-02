@@ -1,3 +1,5 @@
+import json
+
 import aws_cdk.core
 from aws_cdk import (
     aws_lambda as lambda_,
@@ -113,7 +115,11 @@ class BackendStack(cdk.Stack):
         opensearch_url = opensearch_domain.domain_endpoint
         opensearch_url_output = cdk.CfnOutput(self, 'output-opensearch-url', value=opensearch_url)
 
-        opensearch_master_user_secret = secretsmanager.Secret.from_secret_arn(secret_arn=config.OPENSEARCH_MASTER_USER_SECRET_ARN)
+        # best way to get the basic auth credentials to the lambda function is probably through role to secrets manager:
+        # https://aws.amazon.com/blogs/security/how-to-securely-provide-database-credentials-to-lambda-functions-by-using-aws-secrets-manager/
+        # but for now we pass it directly
+        opensearch_master_user_secret = secretsmanager.Secret.from_secret_complete_arn(self, 'os-master-user-secret', secret_complete_arn=config.OPENSEARCH_MASTER_USER_SECRET_ARN)
+        opensearch_master_user_credentials = opensearch_master_user_secret.secret_value
 
         # Layer including requests library for lambda
         wifinetwork_lambda_layer = lambda_.LayerVersion(self, "protobuf-layer",
@@ -138,7 +144,8 @@ class BackendStack(cdk.Stack):
                                                  environment={'GEO_RADIUS_LIMIT_METRE': config.GEO_RADIUS_LIMIT_METRE,
                                                               'OPENSEARCH_URL': opensearch_url,
                                                               'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX,
-                                                              'OPENSEARCH_GET_WIFI_NETWORK_LIMIT': config.OPENSEARCH_GET_WIFI_NETWORK_LIMIT
+                                                              'OPENSEARCH_GET_WIFI_NETWORK_LIMIT': config.OPENSEARCH_GET_WIFI_NETWORK_LIMIT,
+                                                              'OPENSEARCH_USER_SECRET': opensearch_master_user_credentials.to_string(),
                                                               },
                                                  layers=[wifinetwork_lambda_layer]
                                                  )
