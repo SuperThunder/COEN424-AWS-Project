@@ -1,10 +1,11 @@
 import json
-
+import requests
 
 # handler for a POST to submit a wifi network given:
 #   Network name (SSID)
 #   User ID of poster
 #   Password of network (plaintext)
+#   Security type (None, WEP, WPA2, WPA3)
 #   (lon, lat) of network
 
 # We will generate a UUID to uniquely identify the network submission
