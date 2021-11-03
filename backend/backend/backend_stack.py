@@ -166,7 +166,8 @@ class BackendStack(cdk.Stack):
                                                  runtime=lambda_.Runtime.PYTHON_3_9,
                                                  environment={'GEO_RADIUS_LIMIT_METRE': config.GEO_RADIUS_LIMIT_METRE,
                                                               'OPENSEARCH_URL': opensearch_url,
-                                                              'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX
+                                                              'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX,
+                                                              'OPENSEARCH_USER_SECRET': opensearch_master_user_credentials.to_string(),
                                                               },
                                                  layers=[wifinetwork_lambda_layer]
                                                  )
