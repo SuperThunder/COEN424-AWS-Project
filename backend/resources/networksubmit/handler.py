@@ -69,6 +69,11 @@ def lambda_handler(event, context):
 
     # TODO: check that user exists, sectype is in allowed list
 
+    if(wifi_sectype not in allowed_wireless_security_types):
+        response['body']['Error'] = True
+        response['body']['Cause'] = 'Wifi security type {t} not in {l}'.format(t=wifi_sectype,l=str(allowed_wireless_security_types))
+        response['statusCode'] = 400
+
     # generate a UUID for the network submission
     submission_uuid = str(uuid.uuid4())
 
