@@ -28,6 +28,9 @@ host = 'https://' + opensearch_url + '/'
 index_url = host + os.environ['OPENSEARCH_WIFI_NETWORK_INDEX'] + '/'
 search_url = index_url + '_search'
 
+# Parameters that must be in request
+required_params = ['radius', 'lat', 'lon']
+
 
 def lambda_handler(event, context):
     print('Request headers', event['headers'])
@@ -36,7 +39,7 @@ def lambda_handler(event, context):
 
     # response template
     response = {
-        'statusCode': 200,
+        'statusCode': 400,
         'headers': {
             'Access-Control-Allow-Origin': '*',
             'Content-Type': 'application/json'
@@ -45,14 +48,16 @@ def lambda_handler(event, context):
         'isBase64Encoded': False
     }
 
+    if(event['queryStringParameters'] is None):
+        response['body'] = 'Error: params missing'.format(p=required_params)
+        return response
+
     req_params = event['queryStringParameters']
 
     # Required parameters
-    required_params = ['radius', 'lat', 'lon']
     for param in required_params:
         if param not in req_params.keys():
             response['body'] = 'Error: {p} param missing'.format(p=param)
-            response['statusCode'] = 400
             return response
 
     # lat/lon must be valid floats
@@ -61,7 +66,7 @@ def lambda_handler(event, context):
         lon_f = float(req_params['lon'])
     except:
         response['body'] = 'Error: non-float lat/lon'
-        response['statusCode'] = 400
+        return response
 
     # radius must be valid int
     try:
@@ -102,6 +107,15 @@ def lambda_handler(event, context):
 
     # req = requests.get(search_url, auth=awsauth, headers=headers, data=json.dumps(query))
     search_req = requests.get(search_url, auth=opensearch_http_auth, headers=headers, data=json.dumps(query))
+
+    search_json = json.loads(search_req.content)
+
+    # no results
+    if(search_json['hits']['total']['value'] == 0):
+        response['body'] = ''
+        response['statusCode'] = 204 # 'no content'
+
+    # TODO: need to do query to dynamodb too (Using UUIDs of elasticsearch results), and return that!
 
     # return result directly from opensearch
     # todo: maybe only return body if status is 200
