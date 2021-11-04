@@ -140,7 +140,7 @@ def lambda_handler(event, context):
         item['lon'] = float(item['lon'])
         dynamo_results.append(item)
 
-    response['body'] = json.dumps({'results': dynamo_results}, use_decimal=True)
+    response['body'] = json.dumps({'results': dynamo_results})
     response['statusCode'] = 200
 
     return response
