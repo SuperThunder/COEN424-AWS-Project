@@ -121,6 +121,14 @@ class BackendStack(cdk.Stack):
         opensearch_master_user_secret = secretsmanager.Secret.from_secret_complete_arn(self, 'os-master-user-secret', secret_complete_arn=config.OPENSEARCH_MASTER_USER_SECRET_ARN)
         opensearch_master_user_credentials = opensearch_master_user_secret.secret_value
 
+
+        # Dynamo table for wifi network submissions
+        # On demand (pay per request), ID (UUID of submission) as hash key
+        networks_table = dynamodb.Table(self, 'NetworkDynamoDB', billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+                                        partition_key=dynamodb.Attribute(name='uuid', type=dynamodb.AttributeType.STRING)
+                                        )
+
+
         # Layer including requests library for lambda
         wifinetwork_lambda_layer = lambda_.LayerVersion(self, "protobuf-layer",
                                                         compatible_runtimes=[lambda_.Runtime.PYTHON_3_9],
@@ -146,6 +154,7 @@ class BackendStack(cdk.Stack):
                                                               'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX,
                                                               'OPENSEARCH_GET_WIFI_NETWORK_LIMIT': config.OPENSEARCH_GET_WIFI_NETWORK_LIMIT,
                                                               'OPENSEARCH_USER_SECRET': opensearch_master_user_credentials.to_string(),
+                                                              'WIFINETWORK_TABLE_NAME': networks_table.table_name
                                                               },
                                                  layers=[wifinetwork_lambda_layer]
                                                  )
@@ -166,7 +175,9 @@ class BackendStack(cdk.Stack):
                                                  runtime=lambda_.Runtime.PYTHON_3_9,
                                                  environment={'GEO_RADIUS_LIMIT_METRE': config.GEO_RADIUS_LIMIT_METRE,
                                                               'OPENSEARCH_URL': opensearch_url,
-                                                              'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX
+                                                              'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX,
+                                                              'OPENSEARCH_USER_SECRET': opensearch_master_user_credentials.to_string(),
+                                                              'WIFINETWORK_TABLE_NAME': networks_table.table_name
                                                               },
                                                  layers=[wifinetwork_lambda_layer]
                                                  )
@@ -179,16 +190,12 @@ class BackendStack(cdk.Stack):
 
         api_networks.add_method('POST', network_submit_integration)
 
-        # Dynamo table for wifi network submissions
-        # On demand (pay per request), ID (UUID of submission) as hash key
-        networks_table = dynamodb.Table(self, 'NetworkDynamoDB', billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-                                        partition_key=dynamodb.Attribute(name='id', type=dynamodb.AttributeType.STRING)
-                                        )
-        # Grant read permission to the GET lambda, read-write to the POST lambda
+
+        # Grant DynamoDB read permission to the GET lambda, read-write to the POST lambda
         networks_table.grant_read_data(lambda_network_search)
         networks_table.grant_read_write_data(lambda_network_submit)
 
-        # Grant read permission to the GET lambda, read-write to the POST lambda
+        # Grant OpenSearch read permission to the GET lambda, read-write to the POST lambda
         # todo: may need to specify a particular path in the domain
         opensearch_domain.grant_read_write(lambda_network_submit)
         opensearch_domain.grant_read(lambda_network_search)
