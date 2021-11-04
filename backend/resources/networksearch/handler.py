@@ -9,24 +9,19 @@ from requests_aws4auth import AWS4Auth
 # Look up the coordinate in Elastic, get the UUIDs, then look those up in Dynamo
 # Then return the results back
 
+dynamodb = boto3.resource('dynamodb')
+wifinetwork_table_name = os.environ['WIFINETWORK_TABLE_NAME']
+wifinetwork_table = dynamodb.Table(wifinetwork_table_name)
+
 # https://docs.aws.amazon.com/opensearch-service/latest/developerguide/search-example.html
 opensearch_url = os.environ['OPENSEARCH_URL']
-# region = os.environ['AWS_REGION']
-# service = 'es'
-
-# credentials = boto3.Session().get_credentials()
-# awsauth = AWS4Auth(credentials.access_key, credentials.secret_key, region, service, session_token=credentials.token)
-
-# opensearch_http_secret = json.loads(os.environ['OPENSEARCH_USER_SECRET'])
-# requests_session = requests.Session()
-# requests_session.auth=(opensearch_http_secret['username'], opensearch_http_secret['password'])
-
 opensearch_http_secret = json.loads(os.environ['OPENSEARCH_USER_SECRET'])
 opensearch_http_auth = (opensearch_http_secret['username'], opensearch_http_secret['password'])
 
 host = 'https://' + opensearch_url + '/'
 index_url = host + os.environ['OPENSEARCH_WIFI_NETWORK_INDEX'] + '/'
 search_url = index_url + '_search'
+
 
 # Parameters that must be in request
 required_params = ['radius', 'lat', 'lon']
@@ -108,18 +103,44 @@ def lambda_handler(event, context):
     # req = requests.get(search_url, auth=awsauth, headers=headers, data=json.dumps(query))
     search_req = requests.get(search_url, auth=opensearch_http_auth, headers=headers, data=json.dumps(query))
 
+    # check if opensearch search was successful
+    if(search_req.status_code != 200):
+        response['body'] = 'Search encountered an error ({e}})'.format(e=search_req.content)
+        response['statusCode'] = 500
+        return response
+
     search_json = json.loads(search_req.content)
 
     # no results
     if(search_json['hits']['total']['value'] == 0):
         response['body'] = ''
-        response['statusCode'] = 204 # 'no content'
+        response['statusCode'] = 204  # 'no content'
 
-    # TODO: need to do query to dynamodb too (Using UUIDs of elasticsearch results), and return that!
+    # DynamoDB key query template
+    dynamo_key = {
+        'uuid': ''
+    }
 
-    # return result directly from opensearch
-    # todo: maybe only return body if status is 200
-    response['body'] = search_req.text
-    response['statusCode'] = search_req.status_code
+    # If we got results, get them from DynamoDB by using the UUID that links Dynamo and OpenSearch values
+    dynamo_results = []
+    os_hits = search_json['hits']['hits']
+    for hit in os_hits:
+        uuid = hit['_source']['uuid']
+        try:
+            dynamo_key['uuid'] = uuid
+            ddres = wifinetwork_table.get_item(Key=dynamo_key)
+        except Exception as e:
+            # Try to ignore invalid keys (existing in OpenSearch but not Dynamo), but log that they happened
+            print('Error retrieving UUID {u} from Dynamo: {e}'.format(u=uuid, e=e))
+
+        print(ddres.items())
+        item = ddres['Item']
+        # json does not know how to serialize Decimal, so convert back to float
+        item['lat'] = float(item['lat'])
+        item['lon'] = float(item['lon'])
+        dynamo_results.append(item)
+
+    response['body'] = json.dumps({'results': dynamo_results}, use_decimal=True)
+    response['statusCode'] = 200
 
     return response
