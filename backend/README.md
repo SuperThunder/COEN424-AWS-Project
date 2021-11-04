@@ -1,3 +1,34 @@
+# Requirements
+- AWS CLI environment with credentials installed
+- AWS CDK installed
+
+
+# Setup (from nothing)
+1. Setup a python virtualenv and install the requirements
+1. Run `cdk synth` and `cdk deploy` in the backend directory
+1. Wait for the OpenSearch domain to come online (can take 20-30 minutes)
+1. Create the wifinetworks index in OpenSearch with the geo_point mapping (see 'Creating geo_point index')
+    - required and must be done before ANY POSTs to the submit API
+    - the master credentials for OpenSearch basic auth can be found in AWS secrets manager
+
+# Updating stack (after initial creation)
+1. Source your python venv
+1. Run `cdk synth` and `cdk deploy` in the backend directory
+
+# Creating geo_point index
+PUT to <opensearch_domain>/wifinetworks with authorization and json body of:
+```
+{
+    "mappings": {
+            "properties": {
+                "location": { 
+                    "type": "geo_point" 
+                } 
+            } 
+    } 
+}
+```
+
 
 # Welcome to your CDK Python project!
 
