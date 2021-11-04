@@ -1,6 +1,8 @@
 # Requirements
+- Python 3.9+ installed
 - AWS CLI environment with credentials installed
 - AWS CDK installed
+- If you need to add more libraries to the lambda function layer, then you must have some kind of environment matching the amazon one (such as cloud9 or using Amazon's AMI docker image)
 
 
 # Setup (from nothing)
@@ -28,6 +30,7 @@ PUT to <opensearch_domain>/wifinetworks with authorization and json body of:
     } 
 }
 ```
+This must be done before any records are made in the index.
 
 
 # Welcome to your CDK Python project!
