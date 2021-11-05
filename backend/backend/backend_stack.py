@@ -139,6 +139,7 @@ class BackendStack(cdk.Stack):
         # TODO COGNITO AUTH FROM THE FRONT END FOR GATEWAYS
         api = apigateway.RestApi(self, 'network-search-api-424-project', rest_api_name='424 Project Network Search',
                                  description='Search / Submit WiFi Networks',
+                                 default_cors_preflight_options=apigateway.CorsOptions(allow_origins=apigateway.Cors.ALL_ORIGINS, )
                                  )
         api_networks = api.root.add_resource('networks')
 
