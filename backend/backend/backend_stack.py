@@ -80,24 +80,18 @@ class BackendStack(cdk.Stack):
                                                                                                   'wifinetwork-layer-python.zip')))
 
         # Reference the Cognito user pool used to authorize logged in users
-        auth_networks = apigateway.CognitoUserPoolsAuthorizer(self, "networksAPIAuthorizer",
-                                                              cognito_user_pools=[cognito.UserPool.from_user_pool_arn(self, id=config.USER_POOL_ID, user_pool_arn=config.USER_POOL_ARN)])
+        #auth_networks = apigateway.CognitoUserPoolsAuthorizer(self, "networksAPIAuthorizer",
+        #                                                      cognito_user_pools=[cognito.UserPool.from_user_pool_arn(self, id=config.USER_POOL_ID, user_pool_arn=config.USER_POOL_ARN)])
 
         # API Gateway for the backend
         api = apigateway.RestApi(self, 'network-search-api-424-project', rest_api_name='424 Project Network Search',
                                  description='Search / Submit WiFi Networks',
                                  default_cors_preflight_options=apigateway.CorsOptions(allow_origins=apigateway.Cors.ALL_ORIGINS, ),
-                                 default_method_options=apigateway.MethodOptions(authorization_type=apigateway.AuthorizationType.COGNITO,
-                                                                                 authorizer=auth_networks)
+                                 #default_method_options=apigateway.MethodOptions(authorization_type=apigateway.AuthorizationType.COGNITO,
+                                 #                                                authorizer=auth_networks)
                                  )
         api_networks = api.root.add_resource('networks', )
 
-
-        # auth_networks = apigateway.CfnAuthorizer(self, "networksAPIAuth", rest_api_id=api.rest_api_id,
-        #                                          type="COGNITO_USER_POOLS", identity_source='method.request.header.Authorization',
-        #                                          provider_arns=[config.USER_COGNITO_ARN],
-        #                                          name="networksAPIAuth"
-        #                                          )
 
         # Wifi Network Search Lambda
         lambda_network_search = lambda_.Function(self, "NetworkSearchLambda",
