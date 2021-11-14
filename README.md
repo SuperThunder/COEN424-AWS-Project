@@ -1,1 +1,1 @@
-# COEN424 AWS Project
+# COEN424 Project Backend
