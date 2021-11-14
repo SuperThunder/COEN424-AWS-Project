@@ -142,10 +142,10 @@ class BackendStack(cdk.Stack):
                                  default_cors_preflight_options=apigateway.CorsOptions(allow_origins=apigateway.Cors.ALL_ORIGINS, )
                                  )
         api_networks = api.root.add_resource('networks')
-        api_networks_proxy = api.root.add_resource('networks/{marker_id+}')
+        api_networks_proxy = api_networks.add_resource('{marker_id+}')
         
-        api_networks = api.root.add_resource('users')
-        api_users_proxy = api.root.add_resource('users/{user_specific_path+}')
+        api_users = api.root.add_resource('users')
+        api_users_proxy = api_users.add_resource('{user_specific_path+}')
 
         # Wifi Network Search Lambda
         lambda_network_search = lambda_.Function(self, "NetworkSearchLambda",
