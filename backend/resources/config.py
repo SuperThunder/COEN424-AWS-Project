@@ -1,5 +1,5 @@
 
-GEO_RADIUS_LIMIT_METRE = '4000' # radius for search cannot be larger than 4000 metres. has to be a string for lambda environment.
+GEO_RADIUS_LIMIT_METRE = '25000' # radius for search cannot be larger than 4000 metres. has to be a string for lambda environment.
 OPENSEARCH_WIFI_NETWORK_INDEX = 'wifinetworks'
 OPENSEARCH_GET_WIFI_NETWORK_LIMIT = '100' # no more than 100 results per search
 
