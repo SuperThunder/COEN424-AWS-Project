@@ -209,10 +209,10 @@ class BackendStack(cdk.Stack):
         api_networks.add_method('GET', network_search_integration)
 
         users_integration = apigateway.LambdaIntegration(lambda_user_search)
-        api_networks.add_method('GET', users_integration)
+        api_users.add_method('GET', users_integration)
 
         proxy_integration = apigateway.LambdaIntegration(lambda_rest_proxy)
-        api_networks.add_method('ANY', proxy_integration) # ANY is created by default when going trough UI, you may or may not care to do the same here.
+        api_networks.add_method('ANY', proxy_integration)  # ANY is created by default when going trough UI, you may or may not care to do the same here.
 
 
         # Wifi Network Submission Lambda
@@ -242,7 +242,7 @@ class BackendStack(cdk.Stack):
 
         # Grant DynamoDB read permission to the GET lambda, read-write to the POST lambda
         networks_table.grant_read_data(lambda_network_search)
-        networks_table.grant_read_write_data(proxy_integration) # To update the item (tho may not have a related UI component at all.)
+        networks_table.grant_read_write_data(lambda_rest_proxy) # To update the item (tho may not have a related UI component at all.)
         networks_table.grant_read_write_data(lambda_network_submit)
 
         # Grant OpenSearch read permission to the GET lambda, read-write to the POST lambda
