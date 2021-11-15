@@ -87,8 +87,8 @@ class BackendStack(cdk.Stack):
         api = apigateway.RestApi(self, 'network-search-api-424-project', rest_api_name='424 Project Network Search',
                                  description='Search / Submit WiFi Networks',
                                  default_cors_preflight_options=apigateway.CorsOptions(allow_origins=apigateway.Cors.ALL_ORIGINS, ),
-                                 #default_method_options=apigateway.MethodOptions(authorization_type=apigateway.AuthorizationType.COGNITO,
-                                 #                                                authorizer=auth_networks)
+        #                         default_method_options=apigateway.MethodOptions(authorization_type=apigateway.AuthorizationType.COGNITO,
+        #                                                                         authorizer=auth_networks)
                                  )
         api_networks = api.root.add_resource('networks', )
 
