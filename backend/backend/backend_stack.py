@@ -33,65 +33,9 @@ class BackendStack(cdk.Stack):
         # Used to name the cognito pool
         app_prefix = 'project424'
 
-        # Master IAM user for opensearch
-        # Seemingly incompatible with using basic auth
-        #opensearch_master_user = iam.User(self, 'opensearch-master-user', user_name='opensearch-master')
-
-        # Cognito user and identity pool
-        # opensearch_cognito_userpool = cognito.UserPool(self, app_prefix+'userpool', user_pool_name='opensearch-userpool',
-        #                                               sign_in_aliases=cognito.SignInAliases(username=True, email=True),
-        #                                                user_invitation=cognito.UserInvitationConfig(email_subject='424 PROJECT OPENSEARCH COGNITO ACCOUNT',
-        #                                                                                             email_body='User: {username}. Temp pw: {####}'),
-        #                                               auto_verify=cognito.AutoVerifiedAttrs(email=True)
-        #                                               )
-        # opensearch_cognito_userpool.add_domain('424project-cognito-domain', cognito_domain=cognito.CognitoDomainOptions(domain_prefix=app_prefix))
-
-        # opensearch_cognito_identitypool = cognito.CfnIdentityPool(allow_unauthenticated_identities=False, cognito_identity_providers=[])
-
-        # opensearch_cognito_admin_principal_conditions = {
-        #         "StringEquals": {"cognito-identity.amazonaws.com:aud": opensearch_cognito_identitypool.ref},
-        #         "ForAnyValue:StringLike": {
-        #             "cognito-identity.amazonaws.com:amr": "authenticated"
-        #         }
-        #     }
-        #
-        # # Assign the role to a logged in user or not using the 2 conditions
-        # # https://www.luminis.eu/blog/cloud-en/deploying-a-secure-aws-elasticsearch-cluster-using-cdk/
-        # opensearch_cognito_admin_role = iam.Role(self, 'cognito_admin_role',
-        #                                             assumed_by=iam.FederatedPrincipal('cognito-identity.amazonaws.com',
-        #                                             conditions=opensearch_cognito_admin_principal_conditions,
-        #                                             assume_role_action="sts:AssumeRoleWithWebIdentity"
-        #                                             ),
-        #                                          )
-        #
-        # # Admin role: Full permissions within OS cluster
-        # opensearch_cognito_service_role = iam.Role(self, 'cognito_service_role', iam.RoleProps(
-        #     assumed_by=iam.ServicePrincipal('424-project-cognito-serviceprincipal',),
-        #                                     managed_policies=[iam.ManagedPolicy.from_managed_policy_name('AmazonESCognitoAccess')])
-        #                                            )
-        #
-        # # Service role: used to configure Cognito within the Opensearch cluster
-        # opensearch_lambda_service_role = iam.Role(self, 'cognito_service_role', iam.RoleProps(
-        #     assumed_by=iam.ServicePrincipal('424-project-cognito-serviceprincipal',),
-        #                                     managed_policies=[iam.ManagedPolicy.from_managed_policy_name('service-role/AWSLambdaBasicExecutionRole')])
-        #                                            )
-        #
-        # # Used by lambda that handles opensearch requests to configure open distro (monitoring) and execute other opensearch requests.
-        # # Can also be used to insert index templates / data
-        # cognito_admin_group = cognito.CfnUserPoolGroup(self, 'userpool_admingroup_pool', user_pool_id=opensearch_cognito_userpool.user_pool_id,
-        #                                                group_name='opensearch_admins',
-        #                                                role_arn=opensearch_cognito_admin_role.role_arn)
-
         # OpenSearch (Elasticsearch) instance for the geodata
-        # this is apparently just a dev-level cluster (no scaling)
-        # hopefully t3.small.search + 10GB matches up with the free tier
-
-        # Identity resources used here:
-        # Identity and user pools are referenced to configure the Kibana<->Cognito connection
-        # Use the service role that is allowed to configure Opensearch for Cognito
-        # Lambda service role to configure fine grained access in opensearch
-
-
+        # dev-level cluster (no scaling)
+        # t3.small.search + 10GB matches up with the free tier
 
         # Have to declare the domain arn in advanced since we need to reference it
         opensearch_domain_arn = "arn:aws:es:" + self.region + ":" + self.account + ":domain/" + os_domain_name + "/*"
@@ -135,17 +79,22 @@ class BackendStack(cdk.Stack):
                                                         code=lambda_.Code.from_asset(os.path.join('resources',
                                                                                                   'wifinetwork-layer-python.zip')))
 
+        # Reference the Cognito user pool used to authorize logged in users
+        #auth_networks = apigateway.CognitoUserPoolsAuthorizer(self, "networksAPIAuthorizer",
+        #                                                      cognito_user_pools=[cognito.UserPool.from_user_pool_arn(self, id=config.USER_POOL_ID, user_pool_arn=config.USER_POOL_ARN)])
+
         # API Gateway for the backend
-        # TODO COGNITO AUTH FROM THE FRONT END FOR GATEWAYS
         api = apigateway.RestApi(self, 'network-search-api-424-project', rest_api_name='424 Project Network Search',
                                  description='Search / Submit WiFi Networks',
-                                 default_cors_preflight_options=apigateway.CorsOptions(allow_origins=apigateway.Cors.ALL_ORIGINS, )
+                                 default_cors_preflight_options=apigateway.CorsOptions(allow_origins=apigateway.Cors.ALL_ORIGINS, ),
+        #                         default_method_options=apigateway.MethodOptions(authorization_type=apigateway.AuthorizationType.COGNITO,
+        #                                                                         authorizer=auth_networks)
                                  )
         api_networks = api.root.add_resource('networks')
-        api_networks_proxy = api.root.add_resource('networks/{marker_id+}')
-        
-        api_networks = api.root.add_resource('users')
-        api_users_proxy = api.root.add_resource('users/{user_specific_path+}')
+        api_networks_proxy = api_networks.add_resource('{marker_id+}')
+
+        api_users = api.root.add_resource('users')
+        api_users_proxy = api_users.add_resource('{user_specific_path+}')
 
         # Wifi Network Search Lambda
         lambda_network_search = lambda_.Function(self, "NetworkSearchLambda",
@@ -209,10 +158,10 @@ class BackendStack(cdk.Stack):
         api_networks.add_method('GET', network_search_integration)
 
         users_integration = apigateway.LambdaIntegration(lambda_user_search)
-        api_networks.add_method('GET', users_integration)
+        api_users.add_method('GET', users_integration)
 
         proxy_integration = apigateway.LambdaIntegration(lambda_rest_proxy)
-        api_networks.add_method('ANY', proxy_integration) # ANY is created by default when going trough UI, you may or may not care to do the same here.
+        api_networks.add_method('ANY', proxy_integration)  # ANY is created by default when going trough UI, you may or may not care to do the same here.
 
 
         # Wifi Network Submission Lambda
@@ -242,11 +191,11 @@ class BackendStack(cdk.Stack):
 
         # Grant DynamoDB read permission to the GET lambda, read-write to the POST lambda
         networks_table.grant_read_data(lambda_network_search)
-        networks_table.grant_read_write_data(proxy_integration) # To update the item (tho may not have a related UI component at all.)
+        networks_table.grant_read_write_data(lambda_rest_proxy) # To update the item (tho may not have a related UI component at all.)
         networks_table.grant_read_write_data(lambda_network_submit)
 
         # Grant OpenSearch read permission to the GET lambda, read-write to the POST lambda
-        # todo: may need to specify a particular path in the domain
+        # Note: this may note actually be doing anything, as OpenSearch is in basic auth mode
         opensearch_domain.grant_read_write(lambda_network_submit)
         opensearch_domain.grant_read(lambda_network_search)
 
