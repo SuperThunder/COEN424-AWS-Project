@@ -90,8 +90,11 @@ class BackendStack(cdk.Stack):
         #                         default_method_options=apigateway.MethodOptions(authorization_type=apigateway.AuthorizationType.COGNITO,
         #                                                                         authorizer=auth_networks)
                                  )
-        api_networks = api.root.add_resource('networks', )
+        api_networks = api.root.add_resource('networks')
+        api_networks_proxy = api_networks.add_resource('{marker_id+}')
 
+        api_users = api.root.add_resource('users')
+        api_users_proxy = api_users.add_resource('{user_specific_path+}')
 
         # Wifi Network Search Lambda
         lambda_network_search = lambda_.Function(self, "NetworkSearchLambda",
@@ -110,12 +113,56 @@ class BackendStack(cdk.Stack):
                                                  layers=[wifinetwork_lambda_layer]
                                                  )
 
+        # Users fetching lambda (not sure if needed, should probably retrieve very brief information about a specified amount of users)
+        # TODO need to change ENV variables to allow user search
+        lambda_user_search = lambda_.Function(self, "UserSearchLambda",
+                                                 code=lambda_.Code.from_asset(
+                                                     os.path.join('resources', 'userssearch')),
+                                                 handler="handler.lambda_handler",
+                                                 timeout=cdk.Duration.seconds(60),
+                                                 runtime=lambda_.Runtime.PYTHON_3_9,
+                                                 environment={'GEO_RADIUS_LIMIT_METRE': config.GEO_RADIUS_LIMIT_METRE,
+                                                              'OPENSEARCH_URL': opensearch_url,
+                                                              'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX,
+                                                              'OPENSEARCH_GET_WIFI_NETWORK_LIMIT': config.OPENSEARCH_GET_WIFI_NETWORK_LIMIT,
+                                                              'OPENSEARCH_USER_SECRET': opensearch_master_user_credentials.to_string(),
+                                                              'WIFINETWORK_TABLE_NAME': networks_table.table_name
+                                                              },
+                                                 layers=[wifinetwork_lambda_layer]
+                                                 )
+
+        # Rest proxy handling lambda (can be split into 2 functions tho doesnt really matters)
+        # TODO need to change ENV variables to allow user search and related ops
+        lambda_rest_proxy = lambda_.Function(self, "SampleProxyFunction",
+                                                 code=lambda_.Code.from_asset(
+                                                     os.path.join('resources', 'restproxy')),
+                                                 handler="handler.lambda_handler",
+                                                 timeout=cdk.Duration.seconds(60),
+                                                 runtime=lambda_.Runtime.PYTHON_3_9,
+                                                 environment={'GEO_RADIUS_LIMIT_METRE': config.GEO_RADIUS_LIMIT_METRE,
+                                                              'OPENSEARCH_URL': opensearch_url,
+                                                              'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX,
+                                                              'OPENSEARCH_GET_WIFI_NETWORK_LIMIT': config.OPENSEARCH_GET_WIFI_NETWORK_LIMIT,
+                                                              'OPENSEARCH_USER_SECRET': opensearch_master_user_credentials.to_string(),
+                                                              'WIFINETWORK_TABLE_NAME': networks_table.table_name
+                                                              },
+                                                 layers=[wifinetwork_lambda_layer]
+                                                 )
+
+
         # 'A map of Apache Velocity templates that are applied on the request payload.'
         # ^??????
         network_search_request_template = {"application/json": '{ "statusCode": "200" }'}
 
         network_search_integration = apigateway.LambdaIntegration(lambda_network_search)
         api_networks.add_method('GET', network_search_integration)
+
+        users_integration = apigateway.LambdaIntegration(lambda_user_search)
+        api_users.add_method('GET', users_integration)
+
+        proxy_integration = apigateway.LambdaIntegration(lambda_rest_proxy)
+        api_networks.add_method('ANY', proxy_integration)  # ANY is created by default when going trough UI, you may or may not care to do the same here.
+
 
         # Wifi Network Submission Lambda
         lambda_network_submit = lambda_.Function(self, "NetworkSubmitLambda",
@@ -144,6 +191,7 @@ class BackendStack(cdk.Stack):
 
         # Grant DynamoDB read permission to the GET lambda, read-write to the POST lambda
         networks_table.grant_read_data(lambda_network_search)
+        networks_table.grant_read_write_data(lambda_rest_proxy) # To update the item (tho may not have a related UI component at all.)
         networks_table.grant_read_write_data(lambda_network_submit)
 
         # Grant OpenSearch read permission to the GET lambda, read-write to the POST lambda
