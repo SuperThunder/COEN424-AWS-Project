@@ -210,9 +210,12 @@ class BackendStack(cdk.Stack):
 
         users_integration = apigateway.LambdaIntegration(lambda_user_search)
         api_users.add_method('GET', users_integration)
+        api_users_proxy.add_method('ANY', proxy_integration)  # ANY is created by default when going trough UI, you may or may not care to do the same here.
+
+
 
         proxy_integration = apigateway.LambdaIntegration(lambda_rest_proxy)
-        api_networks.add_method('ANY', proxy_integration)  # ANY is created by default when going trough UI, you may or may not care to do the same here.
+        api_networks_proxy.add_method('ANY', proxy_integration)  # ANY is created by default when going trough UI, you may or may not care to do the same here.
 
 
         # Wifi Network Submission Lambda
