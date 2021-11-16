@@ -105,7 +105,8 @@ def lambda_handler(event, context):
 
     # check if opensearch search was successful
     if(search_req.status_code != 200):
-        response['body'] = 'Search encountered an error ({e}})'.format(e=search_req.content)
+        print('Search encountered an error', search_req.content)
+        response['body'] = 'Search encountered an error ({e})'.format(e=search_req.content)
         response['statusCode'] = 500
         return response
 
