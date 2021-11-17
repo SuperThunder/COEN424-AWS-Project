@@ -61,12 +61,14 @@ def lambda_handler(event, context):
         req_body = json.loads(event['body'])
     except:
         response['body']['Cause'] = 'Invalid request body'
+        response['body'] = json.dumps(response['body'])
         return response
 
     # Required parameters
     for k in required_body_keys:
         if k not in req_body.keys():
             response['body']['Cause'] = 'Error: {p} key missing'.format(p=k)
+            response['body'] = json.dumps(response['body'])
             return response
 
     wifi_ssid = req_body['ssid']
@@ -81,6 +83,8 @@ def lambda_handler(event, context):
         response['body']['Cause'] = 'Wifi security type {type} not in {lt}'.format(type=wifi_sectype, lt=str(
             allowed_wireless_security_types))
         response['statusCode'] = 400
+        response['body'] = json.dumps(response['body'])
+        return response
 
     # generate a UUID for the network submission
     submission_uuid = str(uuid.uuid4())
