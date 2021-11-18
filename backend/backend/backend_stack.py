@@ -37,6 +37,12 @@ class BackendStack(cdk.Stack):
                                         partition_key=dynamodb.Attribute(name='uuid', type=dynamodb.AttributeType.STRING)
                                         )
 
+        # Dynamo table for wifi Users
+        # On demand (pay per request), ID (UUID of submission) as hash key
+        user_table = dynamodb.Table(self, 'UsersDynamoDB', billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+                                        partition_key=dynamodb.Attribute(name='uuid', type=dynamodb.AttributeType.STRING)
+                                        )
+
 
         # Layer including requests library for lambda
         wifinetwork_lambda_layer = lambda_.LayerVersion(self, "protobuf-layer",
@@ -78,6 +84,19 @@ class BackendStack(cdk.Stack):
                                                  layers=[wifinetwork_lambda_layer]
                                                  )
 
+        # Wifi Users Search Lambda
+        lambda_user_search = lambda_.Function(self, "UserSearchLambda",
+                                                 code=lambda_.Code.from_asset(
+                                                     os.path.join('resources', 'userssearch')),
+                                                 handler="handler.lambda_handler",
+                                                 timeout=cdk.Duration.seconds(45),
+                                                 runtime=lambda_.Runtime.PYTHON_3_9,
+                                                 environment={
+                                                    'WIFINETWORK_TABLE_NAME': user_table.table_name
+                                                              }
+                                                 )
+
+        
         # Users fetching lambda (not sure if needed, should probably retrieve very brief information about a specified amount of users)
         # TODO need to change ENV variables to allow user search
         lambda_user_search = lambda_.Function(self, "UserSearchLambda",
