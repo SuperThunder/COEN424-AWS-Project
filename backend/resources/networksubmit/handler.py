@@ -54,7 +54,8 @@ def lambda_handler(event, context):
     }
 
     # Dynamodb submission template
-    dynamo_submission = {'ssid': '', 'password': '', 'sectype': '', 'submitter': '', 'uuid': '', 'lat': '', 'lon': ''}
+    dynamo_submission = {'ssid': '', 'password': '', 'sectype': '', 'submitter': '', 'uuid': '', 'lat': '', 'lon': '',
+                        'upvotes': 0, 'downvotes': 0, 'comments': []}
 
     # Get the required parameters from the request json body
     try:
