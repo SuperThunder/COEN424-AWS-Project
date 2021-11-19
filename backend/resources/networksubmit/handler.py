@@ -6,7 +6,7 @@ import uuid
 from decimal import Decimal
 
 # handler for a POST to submit a wifi network given:
-#   Network name (SSID)
+#   Network name (title)
 #   User ID of poster
 #   Password of network (plaintext)
 #   Security type (None, WEP, WPA, WPA2, WPA3)
@@ -26,7 +26,7 @@ host = 'https://' + opensearch_url + '/'
 index_url = host + os.environ['OPENSEARCH_WIFI_NETWORK_INDEX'] + '/'
 doc_url = index_url + '_doc'
 
-required_body_keys = ['ssid', 'password', 'submitter', 'security_type', 'lat', 'lon']
+required_body_keys = ['title', 'password', 'user', 'security', 'lat', 'lon']
 allowed_wireless_security_types = ['Open', 'WEP', 'WPA', 'WPA2', 'WPA3']
 
 
@@ -54,7 +54,7 @@ def lambda_handler(event, context):
     }
 
     # Dynamodb submission template
-    dynamo_submission = {'ssid': '', 'password': '', 'sectype': '', 'submitter': '', 'uuid': '', 'lat': '', 'lon': '',
+    dynamo_submission = {'title': '', 'password': '', 'sectype': '', 'user': '', 'uuid': '', 'lat': '', 'lon': '',
                         'upvotes': 0, 'downvotes': 0, 'comments': []}
 
     # Get the required parameters from the request json body
@@ -71,13 +71,13 @@ def lambda_handler(event, context):
         if k not in req_body.keys():
             response['body']['Cause'] = 'Error: {p} key missing'.format(p=k)
             response['body'] = json.dumps(response['body'])
-            print('2')
+            print(k)
             return response
 
-    wifi_ssid = req_body['ssid']
+    wifi_title = req_body['title']
     wifi_password = req_body['password']
-    wifi_sectype = req_body['security_type']
-    submitting_user = req_body['submitter']
+    wifi_sectype = req_body['security']
+    submitting_user = req_body['user']
     lat = req_body['lat']
     lon = req_body['lon']
 
@@ -95,9 +95,9 @@ def lambda_handler(event, context):
 
     # STORE ALL SUBMISSION VALUES IN DYNAMO, INDEXED BY UUID
     dynamo_submission['uuid'] = submission_uuid
-    dynamo_submission['ssid'] = wifi_ssid
+    dynamo_submission['title'] = wifi_title
     dynamo_submission['password'] = wifi_password
-    dynamo_submission['submitter'] = submitting_user
+    dynamo_submission['user'] = submitting_user
     dynamo_submission['sectype'] = wifi_sectype
     dynamo_submission['lat'] = Decimal(str(lat))  # Dynamo does not accept floats
     dynamo_submission['lon'] = Decimal(str(lon))

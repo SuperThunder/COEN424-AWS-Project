@@ -21,5 +21,4 @@ wifiuser_table = dynamodb.Table(wifiuser_table_name)
 
 def lambda_handler(event, context):
 
-    
     return response
