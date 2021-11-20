@@ -35,7 +35,7 @@ def lambda_handler(event, context):
     }
 
     # Dynamodb submission template
-    dynamo_submission = {'uuid': '', 'username': '','password': '', 'dateJoined': '', 'email': '', 'numWifiAdded': '',}
+    dynamo_submission = {'pk': '', 'username': '','password': '', 'dateJoined': '', 'email': '', 'numWifiAdded': '',}
 
     # Get the required parameters from the request json body
     try:
@@ -61,7 +61,7 @@ def lambda_handler(event, context):
     submission_uuid = str(uuid.uuid4())
 
     # STORE ALL SUBMISSION VALUES IN DYNAMO, INDEXED BY UUID
-    dynamo_submission['uuid'] = submission_uuid
+    dynamo_submission['pk'] = submission_uuid
     dynamo_submission['username'] = user_name
     dynamo_submission['password'] = user_password
     dynamo_submission['dateJoined'] = user_datejoined
@@ -69,6 +69,11 @@ def lambda_handler(event, context):
     dynamo_submission['numWifiAdded'] = user_numWifiAdd
     
     ddres = wifiuser_table.put_item(Item=dynamo_submission)
+    print('DynamoDB result: ', ddres)
+    
+    ddres = wifiuser_table.put_item(Item={'pk': {'S':f'username#{user_name}'}})
+    print('DynamoDB result: ', ddres)
+    ddres = wifiuser_table.put_item(Item={'pk': {'S':f'email#{user_email}'}})
     print('DynamoDB result: ', ddres)
 
     response['statusCode'] = 200

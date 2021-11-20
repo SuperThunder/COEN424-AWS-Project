@@ -28,8 +28,8 @@ required_params = ['radius', 'lat', 'lon']
 
 
 def lambda_handler(event, context):
-    print('Request headers', event['headers'])
-    print('Request params', event['queryStringParameters'])
+    print('Request headers:', event['headers'])
+    print('Request params:', event['queryStringParameters'])
     print('Search URL: ', search_url)
 
     # response template
@@ -45,6 +45,7 @@ def lambda_handler(event, context):
 
     if(event['queryStringParameters'] is None):
         response['body'] = 'Error: params missing'.format(p=required_params)
+        print('Error: params missing')
         return response
 
     req_params = event['queryStringParameters']
@@ -134,7 +135,8 @@ def lambda_handler(event, context):
             # Try to ignore invalid keys (existing in OpenSearch but not Dynamo), but log that they happened
             print('Error retrieving UUID {u} from Dynamo: {e}'.format(u=uuid, e=e))
 
-        print(ddres.items())
+        print('here2:'+ddres['Item'])
+        print('here:'+ddres.items())
         item = ddres['Item']
         # json does not know how to serialize Decimal, so convert back to float
         item['lat'] = float(item['lat'])
