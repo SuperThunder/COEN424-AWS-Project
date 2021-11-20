@@ -137,6 +137,7 @@ def lambda_handler(event, context):
 
         print('here2:'+ddres['Item'])
         print('here:'+ddres.items())
+        
         item = ddres['Item']
         # json does not know how to serialize Decimal, so convert back to float
         item['lat'] = float(item['lat'])
