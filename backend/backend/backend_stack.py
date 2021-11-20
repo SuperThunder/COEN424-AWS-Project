@@ -40,7 +40,7 @@ class BackendStack(cdk.Stack):
         # Dynamo table for wifi Users
         # On demand (pay per request), ID (UUID of submission) as hash key
         user_table = dynamodb.Table(self, 'UsersDynamoDB', billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-                                        partition_key=dynamodb.Attribute(name='uuid', type=dynamodb.AttributeType.STRING)
+                                        partition_key=dynamodb.Attribute(name='pk', type=dynamodb.AttributeType.STRING)
                                         )
 
 
@@ -92,27 +92,22 @@ class BackendStack(cdk.Stack):
                                                  timeout=cdk.Duration.seconds(45),
                                                  runtime=lambda_.Runtime.PYTHON_3_9,
                                                  environment={
-                                                    'WIFINETWORK_TABLE_NAME': user_table.table_name
+                                                    'WIFIUSER_TABLE_NAME': user_table.table_name
                                                               }
                                                  )
 
         
         # Users fetching lambda (not sure if needed, should probably retrieve very brief information about a specified amount of users)
         # TODO need to change ENV variables to allow user search
-        lambda_user_search = lambda_.Function(self, "UserSearchLambda",
+        lambda_user_submit = lambda_.Function(self, "UserSubmitLambda",
                                                  code=lambda_.Code.from_asset(
                                                      os.path.join('resources', 'userssearch')),
                                                  handler="handler.lambda_handler",
-                                                 timeout=cdk.Duration.seconds(60),
+                                                 timeout=cdk.Duration.seconds(45),
                                                  runtime=lambda_.Runtime.PYTHON_3_9,
-                                                 environment={'GEO_RADIUS_LIMIT_METRE': config.GEO_RADIUS_LIMIT_METRE,
-                                                              'OPENSEARCH_URL': config.OPENSEARCH_URL,
-                                                              'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX,
-                                                              'OPENSEARCH_GET_WIFI_NETWORK_LIMIT': config.OPENSEARCH_GET_WIFI_NETWORK_LIMIT,
-                                                              'OPENSEARCH_USER_SECRET': opensearch_master_user_credentials.to_string(),
-                                                              'WIFINETWORK_TABLE_NAME': networks_table.table_name
-                                                              },
-                                                 layers=[wifinetwork_lambda_layer]
+                                                 environment={
+                                                    'WIFIUSER_TABLE_NAME': user_table.table_name
+                                                              }
                                                  )
 
         # Rest proxy handling lambda (can be split into 2 functions tho doesnt really matters)
@@ -183,6 +178,10 @@ class BackendStack(cdk.Stack):
         #opensearch_domain.grant_read_write(lambda_network_submit)
         #opensearch_domain.grant_read(lambda_network_search)
 
+        # Grant DynamoDB read permission to the GET lambda, read-write to the POST lambda
+        user_table.grant_read_data(lambda_user_search)
+        user_table.grant_read_write_data(lambda_user_submit) # To update the item (tho may not have a related UI component at all.)
+        # user_table.grant_read_write_data()
 
 
 

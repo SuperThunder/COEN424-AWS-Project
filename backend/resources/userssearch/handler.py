@@ -61,9 +61,9 @@ def lambda_handler(event, context):
             'pk': f'email#{email}'
         }
             
-
     # If we got results, get them from DynamoDB by using the UUID that links Dynamo and OpenSearch values
-    response = wifiuser_table.get_item(key={dynamo_key})
+    dynamo_response = wifiuser_table.get_item(key={dynamo_key})
+    response['body'] = json(dynamo_response)
     print(response)
 
     return response

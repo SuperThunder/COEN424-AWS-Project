@@ -6,9 +6,7 @@ def lambda_handler(event, context):
     
     # TODO Methods to handle:
     # 1) GET /users/{user_id+}                                      -> full info of specific user, except favorites and markers
-    # 2) GET /users/{user_id+}/favorites                            -> full list of user's favorites
     # 3) GET /users/{user_id+}/markers                              -> full list of user's markers
-    # 4) GET and DELETE /users/{user_id+}/favorites/marker_id       -> GET full info of the specific marker / DELETE the specific marker from user's favorites
     # 5) GET and DELETE /users/{user_id+}/markers/marker_id         -> GET full info of the specific marker / DELETE the specific marker from the system entirely
     # 6) GET and UPDATE (or POST) /networks/{marker_id+}            -> GET full info of a specific marker / UPDATE the data of the speicific marker
 
