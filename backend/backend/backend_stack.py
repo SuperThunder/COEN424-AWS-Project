@@ -6,7 +6,6 @@ from aws_cdk import (
     aws_iam as iam,
     aws_cognito as cognito,
     aws_dynamodb as dynamodb,
-    aws_opensearchservice as opensearch,
     aws_apigateway as apigateway,
     aws_secretsmanager as secretsmanager,
     core as cdk
@@ -15,7 +14,6 @@ from aws_cdk import (
 import os
 import sys
 
-sys.path.append('..')
 from resources import config
 
 
