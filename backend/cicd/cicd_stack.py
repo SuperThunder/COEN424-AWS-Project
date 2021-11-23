@@ -53,7 +53,7 @@ class CicdStack(cdk.Stack):
                 synth_action=pipelines.SimpleSynthAction(
                     source_artifact=sourceartifact,
                     cloud_assembly_artifact=cdkoutputartifact,
-                    install_command='pwd; ls -lh; npm install -g aws-cdk && pip install -r requirements.txt',
+                    install_command='cd backend; pwd; ls -lh; npm install -g aws-cdk && pip install -r requirements.txt',
                     synth_command='cdk synth'
                 )
         )
