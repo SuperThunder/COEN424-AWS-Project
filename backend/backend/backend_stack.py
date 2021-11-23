@@ -101,7 +101,7 @@ class BackendStack(cdk.Stack):
         # TODO need to change ENV variables to allow user search
         lambda_user_submit = lambda_.Function(self, "UserSubmitLambda",
                                                  code=lambda_.Code.from_asset(
-                                                     os.path.join('resources', 'userssearch')),
+                                                     os.path.join('resources', 'usersubmit')),
                                                  handler="handler.lambda_handler",
                                                  timeout=cdk.Duration.seconds(45),
                                                  runtime=lambda_.Runtime.PYTHON_3_9,
@@ -116,18 +116,24 @@ class BackendStack(cdk.Stack):
                                                  code=lambda_.Code.from_asset(
                                                      os.path.join('resources', 'restproxy')),
                                                  handler="handler.lambda_handler",
-                                                 timeout=cdk.Duration.seconds(60),
+                                                 timeout=cdk.Duration.seconds(45),
                                                  runtime=lambda_.Runtime.PYTHON_3_9,
-                                                 environment={'GEO_RADIUS_LIMIT_METRE': config.GEO_RADIUS_LIMIT_METRE,
-                                                              'OPENSEARCH_URL': config.OPENSEARCH_URL,
-                                                              'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX,
-                                                              'OPENSEARCH_GET_WIFI_NETWORK_LIMIT': config.OPENSEARCH_GET_WIFI_NETWORK_LIMIT,
-                                                              'OPENSEARCH_USER_SECRET': opensearch_master_user_credentials.to_string(),
-                                                              'WIFINETWORK_TABLE_NAME': networks_table.table_name
-                                                              },
-                                                 layers=[wifinetwork_lambda_layer]
+                                                 environment={
+                                                    'WIFIUSER_TABLE_NAME': user_table.table_name
+                                                              }
                                                  )
 
+        lambda_like_dislike = lambda_.Function(self, "LikeDislike",
+                                                 code=lambda_.Code.from_asset(
+                                                     os.path.join('resources', 'likedislike')),
+                                                 handler="handler.lambda_handler",
+                                                 timeout=cdk.Duration.seconds(45),
+                                                 runtime=lambda_.Runtime.PYTHON_3_9,
+                                                 environment={
+                                                    'WIFINETWORK_TABLE_NAME': user_table.table_name
+                                                              }
+                                                 )
+        
 
         # 'A map of Apache Velocity templates that are applied on the request payload.'
         # ^??????
@@ -166,11 +172,17 @@ class BackendStack(cdk.Stack):
         network_submit_integration = apigateway.LambdaIntegration(lambda_network_submit)
 
         api_networks.add_method('POST', network_submit_integration)
+        
+        
+        user_submit_integration = apigateway.LambdaIntegration(lambda_network_submit)
+
+        api_networks.add_method('POST', user_submit_integration)
 
 
         # Grant DynamoDB read permission to the GET lambda, read-write to the POST lambda
         networks_table.grant_read_data(lambda_network_search)
         networks_table.grant_read_write_data(lambda_rest_proxy) # To update the item (tho may not have a related UI component at all.)
+        
         networks_table.grant_read_write_data(lambda_network_submit)
 
         # Grant OpenSearch read permission to the GET lambda, read-write to the POST lambda
@@ -180,12 +192,9 @@ class BackendStack(cdk.Stack):
 
         # Grant DynamoDB read permission to the GET lambda, read-write to the POST lambda
         user_table.grant_read_data(lambda_user_search)
-        user_table.grant_read_write_data(lambda_user_submit) # To update the item (tho may not have a related UI component at all.)
-        # user_table.grant_read_write_data()
-
-
-
-
+        user_table.grant_read_write_data(lambda_rest_proxy) # To update the item (tho may not have a related UI component at all.)
+        user_table.grant_read_write_data(lambda_user_submit) 
+        user_table.grant_read_write_data(lambda_like_dislike)
 
         # opensearch related docs:
         # setting permissions in CDK: https://docs.aws.amazon.com/cdk/api/latest/docs/aws-opensearchservice-readme.html#permissions

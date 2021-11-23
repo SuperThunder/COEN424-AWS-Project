@@ -35,7 +35,7 @@ def lambda_handler(event, context):
     }
 
     # Dynamodb submission template
-    dynamo_submission = {'pk': '', 'username': '','password': '', 'dateJoined': '', 'email': '', 'numWifiAdded': '',}
+    dynamo_submission = {'pk': '', 'username': '','password': '', 'dateJoined': '', 'email': '', 'numWifiAdded': ''}
 
     # Get the required parameters from the request json body
     try:
@@ -48,6 +48,7 @@ def lambda_handler(event, context):
     for k in required_body_keys:
         if k not in req_body.keys():
             response['body']['Cause'] = 'Error: {p} key missing'.format(p=k)
+            print(k)
             return response
 
     user_name = req_body['username']
