@@ -28,8 +28,8 @@ required_params = ['radius', 'lat', 'lon']
 
 
 def lambda_handler(event, context):
-    print('Request headers:', event['headers'])
-    print('Request params:', event['queryStringParameters'])
+    print('Request headers: ', event['headers'])
+    print('Request params: ', event['queryStringParameters'])
     print('Search URL: ', search_url)
 
     # response template
