@@ -24,12 +24,12 @@ search_url = index_url + '_search'
 
 
 # Parameters that must be in request
-required_params = ['radius', 'lat', 'lon']
+required_params = ['radius', 'lat', 'lon','like','dislike']
 
 
 def lambda_handler(event, context):
-    print('Request headers: ', event['headers'])
-    print('Request params: ', event['queryStringParameters'])
+    print('Request headers:', event['headers'])
+    print('Request params:', event['queryStringParameters'])
     print('Search URL: ', search_url)
 
     # response template
@@ -130,11 +130,37 @@ def lambda_handler(event, context):
         uuid = hit['_source']['uuid']
         try:
             dynamo_key['uuid'] = uuid
-            ddres = wifinetwork_table.get_item(Key=dynamo_key)
+            if req_params['like'] == 'true':
+                ddres = wifinetwork_table.update_item(
+                    Key=dynamo_key,
+                    UpdateExpression="SET my_value = if_not_exists(my_value, :start) + :inc",
+
+                    ExpressionAttributeValues={
+                        ':inc': 1,
+                        ':start': 0,
+                    },
+                    ReturnValues="UPDATED_NEW"
+                )
+            elif req_params['dislike'] == 'true':
+                                ddres = wifinetwork_table.update_item(
+                    Key=dynamo_key,
+                    UpdateExpression="SET my_value = if_not_exists(my_value, :start) + :inc",
+
+                    ExpressionAttributeValues={
+                        ':inc': -1,
+                        ':start': 0,
+                    },
+                    ReturnValues="UPDATED_NEW"
+                )
+            else:
+                print('Like and dislike have not changed updated')
         except Exception as e:
             # Try to ignore invalid keys (existing in OpenSearch but not Dynamo), but log that they happened
             print('Error retrieving UUID {u} from Dynamo: {e}'.format(u=uuid, e=e))
 
+        print('here2:'+ddres['Item'])
+        # print('here:'+ddres.items())
+        
         item = ddres['Item']
         # json does not know how to serialize Decimal, so convert back to float
         item['lat'] = float(item['lat'])
