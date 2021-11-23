@@ -53,9 +53,8 @@ class CicdStack(cdk.Stack):
                 synth_action=pipelines.SimpleSynthAction(
                     source_artifact=sourceartifact,
                     cloud_assembly_artifact=cdkoutputartifact,
-                    # each command runs in its own shell in codebuild v0.1, starting at the root directory, so we have to cd and link the commands together
                     install_command='cd backend && npm install -g aws-cdk && pip install -r requirements.txt',
-                    synth_command='cd backend && pwd && cdk synth'
+                    synth_command='cdk synth'
                 )
         )
 
