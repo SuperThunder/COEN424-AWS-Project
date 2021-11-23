@@ -42,13 +42,12 @@ class CicdStack(cdk.Stack):
         cdkpipeline = pipelines.CdkPipeline(self, 'CDKPipeline', pipeline_name='Project424BackendCDKPipeline',
                 cloud_assembly_artifact=cdkoutputartifact,
                 source_action=codepipelineactions.GitHubSourceAction(
-                    action_name='Github',
+                    action_name='GitHub',
                     output=sourceartifact,
                     oauth_token=cdk.SecretValue.secrets_manager('GITHUB_TOKEN'),
                     owner='SuperThunder',
                     repo='COEN424-AWS-Project',
                     branch='backend',
-                    trigger=codepipelineactions.GitHubTrigger.POLL
                 ),
                 synth_action=pipelines.SimpleSynthAction(
                     source_artifact=sourceartifact,

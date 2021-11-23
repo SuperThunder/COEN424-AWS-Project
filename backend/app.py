@@ -12,6 +12,6 @@ app = core.App()
 BackendStack(app, "backend")
 
 # The CICD pipeline
-CicdStack(app, "CicdStack")
+CicdStack(app, "cicd")
 
 app.synth()
