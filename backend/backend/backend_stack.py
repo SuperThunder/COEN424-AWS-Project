@@ -174,7 +174,7 @@ class BackendStack(cdk.Stack):
         
         user_submit_integration = apigateway.LambdaIntegration(lambda_network_submit)
 
-        api_networks.add_method('POST', user_submit_integration)
+        api_users.add_method('POST', user_submit_integration)
 
 
         # Grant DynamoDB read permission to the GET lambda, read-write to the POST lambda
