@@ -48,6 +48,7 @@ class CicdStack(cdk.Stack):
                     owner='SuperThunder',
                     repo='COEN424-AWS-Project',
                     branch='backend',
+                    trigger=codepipelineactions.GitHubTrigger.POLL
                 ),
                 synth_action=pipelines.SimpleSynthAction(
                     source_artifact=sourceartifact,
