@@ -135,9 +135,6 @@ def lambda_handler(event, context):
             # Try to ignore invalid keys (existing in OpenSearch but not Dynamo), but log that they happened
             print('Error retrieving UUID {u} from Dynamo: {e}'.format(u=uuid, e=e))
 
-        print('here2:'+ddres['Item'])
-        print('here:'+ddres.items())
-        
         item = ddres['Item']
         # json does not know how to serialize Decimal, so convert back to float
         item['lat'] = float(item['lat'])
