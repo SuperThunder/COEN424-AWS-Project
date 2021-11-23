@@ -14,7 +14,7 @@ wifiuser_table_name = os.environ['WIFIUSER_TABLE_NAME']
 wifiuser_table = dynamodb.Table(wifiuser_table_name)
 
 # Parameters that must be in request
-# required_params = ['username', 'email']
+required_params = ['username', 'email']
 
 def lambda_handler(event, context):
     
