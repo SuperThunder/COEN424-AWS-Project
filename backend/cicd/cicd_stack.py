@@ -71,7 +71,7 @@ class CicdStack(cdk.Stack):
                     id="Synth",
                     input=github_source,
                     commands=['cd backend', 'npm install -g aws-cdk', 'pip install -r requirements.txt', 'cdk synth'],
-                    primary_output_directory='backend'
+                    primary_output_directory="backend/cdk.out"
                 ),
                 # Save $1/month by not having artifacts encrypted, however give up cross account deployments
                 cross_account_keys=False,
