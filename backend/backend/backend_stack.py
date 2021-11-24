@@ -43,7 +43,7 @@ class BackendStack(cdk.Stack):
 
 
         # Layer including requests library for lambda
-        wifinetwork_lambda_layer = lambda_.LayerVersion(self, "protobuf-layer",
+        wifinetwork_lambda_layer = lambda_.LayerVersion(self, "library-layer",
                                                         compatible_runtimes=[lambda_.Runtime.PYTHON_3_9],
                                                         code=lambda_.Code.from_asset(os.path.join('resources',
                                                                                                   'wifinetwork-layer-python.zip')))
