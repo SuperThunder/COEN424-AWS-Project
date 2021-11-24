@@ -2,6 +2,7 @@ import json
 import requests
 import boto3
 import os
+import decimal
 from requests_aws4auth import AWS4Auth
 
 # handler for GET with a (lat,lon) coordinate and radius
@@ -145,8 +146,13 @@ def lambda_handler(event, context):
 
         item = ddres['Item']
         # json does not know how to serialize Decimal, so convert back to float
-        item['lat'] = float(item['lat'])
-        item['lon'] = float(item['lon'])
+        #item['lat'] = float(item['lat'])
+        #item['lon'] = float(item['lon'])
+
+        for x in item.keys():
+            if type(x) == decimal.Decimal:
+                item[x] == float(item[x])
+
         dynamo_results.append(item)
 
     response['body'] = json.dumps({'results': dynamo_results})
