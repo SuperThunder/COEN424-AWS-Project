@@ -1,2 +1,4 @@
 /venv/
 /backend-opensearch/source.bat
+.idea
+/backend/source.bat
