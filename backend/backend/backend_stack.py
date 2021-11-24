@@ -83,6 +83,22 @@ class BackendStack(cdk.Stack):
                                                  layers=[wifinetwork_lambda_layer]
                                                  )
 
+        # Wifi Network Submission Lambda
+        lambda_network_submit = lambda_.Function(self, "NetworkSubmitLambda",
+                                                 code=lambda_.Code.from_asset(
+                                                     os.path.join('resources', 'networksubmit')),
+                                                 handler="handler.lambda_handler",
+                                                 timeout=cdk.Duration.seconds(45),
+                                                 runtime=lambda_.Runtime.PYTHON_3_9,
+                                                 environment={'GEO_RADIUS_LIMIT_METRE': config.GEO_RADIUS_LIMIT_METRE,
+                                                              'OPENSEARCH_URL': config.OPENSEARCH_URL,
+                                                              'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX,
+                                                              'OPENSEARCH_USER_SECRET': opensearch_master_user_credentials.to_string(),
+                                                              'WIFINETWORK_TABLE_NAME': networks_table.table_name
+                                                              },
+                                                 layers=[wifinetwork_lambda_layer]
+                                                 )
+
         # Wifi Users Search Lambda
         lambda_user_search = lambda_.Function(self, "UserSearchLambda",
                                                  code=lambda_.Code.from_asset(
@@ -150,22 +166,6 @@ class BackendStack(cdk.Stack):
 
 
 
-        # Wifi Network Submission Lambda
-        lambda_network_submit = lambda_.Function(self, "NetworkSubmitLambda",
-                                                 code=lambda_.Code.from_asset(
-                                                     os.path.join('resources', 'networksubmit')),
-                                                 handler="handler.lambda_handler",
-                                                 timeout=cdk.Duration.seconds(45),
-                                                 runtime=lambda_.Runtime.PYTHON_3_9,
-                                                 environment={'GEO_RADIUS_LIMIT_METRE': config.GEO_RADIUS_LIMIT_METRE,
-                                                              'OPENSEARCH_URL': config.OPENSEARCH_URL,
-                                                              'OPENSEARCH_WIFI_NETWORK_INDEX': config.OPENSEARCH_WIFI_NETWORK_INDEX,
-                                                              'OPENSEARCH_USER_SECRET': opensearch_master_user_credentials.to_string(),
-                                                              'WIFINETWORK_TABLE_NAME': networks_table.table_name
-                                                              },
-                                                 layers=[wifinetwork_lambda_layer]
-                                                 )
-
         # 'A map of Apache Velocity templates that are applied on the request payload.'
         # ^??????
         network_submit_request_template = {"application/json": '{ "statusCode": "200" }'}
@@ -181,26 +181,14 @@ class BackendStack(cdk.Stack):
 
 
         # Grant DynamoDB read permission to the GET lambda, read-write to the POST lambda
+        # For network submission table
         networks_table.grant_read_data(lambda_network_search)
         networks_table.grant_read_write_data(lambda_rest_proxy) # To update the item (tho may not have a related UI component at all.)
-        
         networks_table.grant_read_write_data(lambda_network_submit)
 
-        # Grant OpenSearch read permission to the GET lambda, read-write to the POST lambda
-        # Note: this may note actually be doing anything, as OpenSearch is in basic auth mode
-        #opensearch_domain.grant_read_write(lambda_network_submit)
-        #opensearch_domain.grant_read(lambda_network_search)
-
         # Grant DynamoDB read permission to the GET lambda, read-write to the POST lambda
+        # For users table
         user_table.grant_read_data(lambda_user_search)
         user_table.grant_read_write_data(lambda_rest_proxy) # To update the item (tho may not have a related UI component at all.)
         user_table.grant_read_write_data(lambda_user_submit) 
         user_table.grant_read_write_data(lambda_like_dislike)
-
-        # opensearch related docs:
-        # setting permissions in CDK: https://docs.aws.amazon.com/cdk/api/latest/docs/aws-opensearchservice-readme.html#permissions
-        # getting started: https://docs.aws.amazon.com/opensearch-service/latest/developerguide/gsgcreate-domain.html
-        # fine grained access tutorial: https://docs.aws.amazon.com/opensearch-service/latest/developerguide/fgac.html
-        #
-        # opensearch notes/ideas:
-        # would probably work if we have a master user (for manually poking around) and IAM permissions (to give to the lambdas)

@@ -131,9 +131,17 @@ def lambda_handler(event, context):
         try:
             dynamo_key['uuid'] = uuid
             ddres = wifinetwork_table.get_item(Key=dynamo_key)
+
+            # get_item returns 200 even for primary keys that don't exist
+            # and the library does not throw an exception!
+            if not 'Item' in ddres.keys():
+                print('UUID {u} does not exist in DynamoDB. Is it a leftover in Opensearch?'.format(u=uuid))
+                continue # skip to next item
+
         except Exception as e:
             # Try to ignore invalid keys (existing in OpenSearch but not Dynamo), but log that they happened
             print('Error retrieving UUID {u} from Dynamo: {e}'.format(u=uuid, e=e))
+            continue # skip to next item
 
         item = ddres['Item']
         # json does not know how to serialize Decimal, so convert back to float
