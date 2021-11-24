@@ -20,7 +20,7 @@ class BackendStage(cdk.Stage):
     def __init__(self, scope: cdk.Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
-        service = backend_stack.BackendStack(self, 'Project424Backend')
+        service = backend_stack.BackendStack(self, 'Project424Backend', stack_name="backend-Project424Backend")
         #service = BackendStack(self, 'Project424Backend')
 
 
