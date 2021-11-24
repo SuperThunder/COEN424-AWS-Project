@@ -66,7 +66,7 @@ class CicdStack(cdk.Stack):
                                                                 connection_arn='arn:aws:codestar-connections:us-east-1:391508643370:connection/2520f736-ef67-479d-bea7-78cbffb6fa16')
 
         cdkpipeline = pipelines.CodePipeline(self, 'CDKPipeline', pipeline_name='Project424BackendCDKPipeline',
-                self_mutation=False,
+                self_mutation=True,
                 synth=pipelines.ShellStep(
                     id="Synth",
                     input=github_source,
