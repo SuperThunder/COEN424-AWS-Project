@@ -68,8 +68,21 @@ def lambda_handler(event, context):
     dynamo_submission['dateJoined'] = user_datejoined
     dynamo_submission['email'] = user_email
     dynamo_submission['numWifiAdded'] = user_numWifiAdd
+    dynamo_submission['markers'] = ['']
     
-    ddres = wifiuser_table.put_item(Item=dynamo_submission)
+    # ddres = wifiuser_table.put_item(Item=dynamo_submission)
+    
+    ddres = wifiuser_table.put_item(Item={
+            'pk': {'S':f'{submission_uuid}'},
+            'username': {'S':f'{user_name}'},
+            'password': {'S':f'{user_password}'}, 
+            'dateJoined': {'S':f'{user_datejoined}'}, 
+            'email': {'S':f'{user_email}'}, 
+            'numWifiAdded': {'S':f'{user_numWifiAdd}'},
+            'markers': {'SS':""}
+        }
+    )
+    
     print('DynamoDB result: ', ddres)
     
     ddres = wifiuser_table.put_item(Item={'pk': {'S':f'username#{user_name}'}})

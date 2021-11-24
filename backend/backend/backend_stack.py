@@ -108,7 +108,8 @@ class BackendStack(cdk.Stack):
                                                  runtime=lambda_.Runtime.PYTHON_3_9,
                                                  environment={
                                                     'WIFIUSER_TABLE_NAME': user_table.table_name
-                                                              }
+                                                              },
+                                                 layers=[wifinetwork_lambda_layer]
                                                  )
 
         
@@ -122,7 +123,8 @@ class BackendStack(cdk.Stack):
                                                  runtime=lambda_.Runtime.PYTHON_3_9,
                                                  environment={
                                                     'WIFIUSER_TABLE_NAME': user_table.table_name
-                                                              }
+                                                              },
+                                                 layers=[wifinetwork_lambda_layer]
                                                  )
 
         # Rest proxy handling lambda (can be split into 2 functions tho doesnt really matters)
@@ -135,7 +137,8 @@ class BackendStack(cdk.Stack):
                                                  runtime=lambda_.Runtime.PYTHON_3_9,
                                                  environment={
                                                     'WIFIUSER_TABLE_NAME': user_table.table_name
-                                                              }
+                                                              },
+                                                 layers=[wifinetwork_lambda_layer]
                                                  )
 
         lambda_like_dislike = lambda_.Function(self, "LikeDislike",
@@ -146,7 +149,8 @@ class BackendStack(cdk.Stack):
                                                  runtime=lambda_.Runtime.PYTHON_3_9,
                                                  environment={
                                                     'WIFINETWORK_TABLE_NAME': user_table.table_name
-                                                              }
+                                                              },
+                                                 layers=[wifinetwork_lambda_layer]
                                                  )
         
 

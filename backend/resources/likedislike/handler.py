@@ -24,8 +24,7 @@ search_url = index_url + '_search'
 
 
 # Parameters that must be in request
-required_params = ['radius', 'lat', 'lon','like','dislike']
-
+required_params = ['uuid','like','dislike']
 
 def lambda_handler(event, context):
     print('Request headers:', event['headers'])
@@ -56,118 +55,26 @@ def lambda_handler(event, context):
             response['body'] = 'Error: {p} param missing'.format(p=param)
             return response
 
-    # lat/lon must be valid floats
-    try:
-        lat_f = float(req_params['lat'])
-        lon_f = float(req_params['lon'])
-    except:
-        response['body'] = 'Error: non-float lat/lon'
-        return response
+    dynamo_key = req_params['uuid']
+    if req_params['like'] == 'true':
+        ddres = wifinetwork_table.update_item(
+            Key=dynamo_key,
+            UpdateExpression="SET upvote = upvote + :inc",
 
-    # radius must be valid int
-    try:
-        req_geo_radius = int(req_params['radius'])
-    except:
-        response['body'] = 'Error: non-int radius'
-        response['statusCode'] = 400
-        return response
+            ExpressionAttributeValues={
+                ':inc': 1
+            },
+            ReturnValues="UPDATED_NEW"
+        )
+    elif req_params['dislike'] == 'true':
+        ddres = wifinetwork_table.update_item(
+            Key=dynamo_key,
+            UpdateExpression="SET downvote = downvote + :inc",
 
-    # radius must be >0, < maximum specified in config
-    geo_radius_max = int(os.environ['GEO_RADIUS_LIMIT_METRE'])
-    if (req_geo_radius <= 0 or req_geo_radius > geo_radius_max):
-        response['body'] = 'Radius must be at least 0 and less than {ub}'.format(ub=geo_radius_max)
-        response['statusCode'] = 400
-        return response
-
-    query_size_limit = int(os.environ['OPENSEARCH_GET_WIFI_NETWORK_LIMIT'])
-    query = {
-        "query": {
-            "bool": {
-                "must": {
-                    "match_all": {}
-                },
-                "filter": {
-                    "geo_distance": {
-                        "distance": str(req_geo_radius)+'m',
-                        "location": {
-                            "lat": lat_f,
-                            "lon": lon_f
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    headers = {"Content-Type": "application/json"}
-
-    # req = requests.get(search_url, auth=awsauth, headers=headers, data=json.dumps(query))
-    search_req = requests.get(search_url, auth=opensearch_http_auth, headers=headers, data=json.dumps(query))
-
-    # check if opensearch search was successful
-    if(search_req.status_code != 200):
-        print('Search encountered an error', search_req.content)
-        response['body'] = 'Search encountered an error ({e})'.format(e=search_req.content)
-        response['statusCode'] = 500
-        return response
-
-    search_json = json.loads(search_req.content)
-
-    # no results
-    if(search_json['hits']['total']['value'] == 0):
-        response['body'] = ''
-        response['statusCode'] = 204  # 'no content'
-
-    # DynamoDB key query template
-    dynamo_key = {
-        'uuid': ''
-    }
-
-    # If we got results, get them from DynamoDB by using the UUID that links Dynamo and OpenSearch values
-    dynamo_results = []
-    os_hits = search_json['hits']['hits']
-    for hit in os_hits:
-        uuid = hit['_source']['uuid']
-        try:
-            dynamo_key['uuid'] = uuid
-            if req_params['like'] == 'true':
-                ddres = wifinetwork_table.update_item(
-                    Key=dynamo_key,
-                    UpdateExpression="SET my_value = if_not_exists(my_value, :start) + :inc",
-
-                    ExpressionAttributeValues={
-                        ':inc': 1,
-                        ':start': 0,
-                    },
-                    ReturnValues="UPDATED_NEW"
-                )
-            elif req_params['dislike'] == 'true':
-                                ddres = wifinetwork_table.update_item(
-                    Key=dynamo_key,
-                    UpdateExpression="SET my_value = if_not_exists(my_value, :start) + :inc",
-
-                    ExpressionAttributeValues={
-                        ':inc': -1,
-                        ':start': 0,
-                    },
-                    ReturnValues="UPDATED_NEW"
-                )
-            else:
-                print('Like and dislike have not changed updated')
-        except Exception as e:
-            # Try to ignore invalid keys (existing in OpenSearch but not Dynamo), but log that they happened
-            print('Error retrieving UUID {u} from Dynamo: {e}'.format(u=uuid, e=e))
-
-        print('here2:'+ddres['Item'])
-        # print('here:'+ddres.items())
-        
-        item = ddres['Item']
-        # json does not know how to serialize Decimal, so convert back to float
-        item['lat'] = float(item['lat'])
-        item['lon'] = float(item['lon'])
-        dynamo_results.append(item)
-
-    response['body'] = json.dumps({'results': dynamo_results})
-    response['statusCode'] = 200
+            ExpressionAttributeValues={
+                ':inc': -1
+            },
+            ReturnValues="UPDATED_NEW"
+        )
 
     return response
