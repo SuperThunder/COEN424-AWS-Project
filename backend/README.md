@@ -7,7 +7,12 @@
 
 # Setup (from nothing)
 1. Setup a python virtualenv and install the requirements
-1. Run `cdk synth` and `cdk deploy` in the backend directory
+1. Deploy the OpenSearch cluster separately (see backend-opensearch CDK app)
+1. Create a CodeStar connection to the Github repo
+1. Put the ARN of the CodeStar connection in cicd/cicd_stack.py
+1. Run `cdk synth` in the backend directory
+1. Run `cdk deploy cicd` to deploy the CICD pipeline
+1. Run `cdk deploy backend` to deploy the actual backend
 1. Wait for the OpenSearch domain to come online (can take 20-30 minutes)
 1. Create the wifinetworks index in OpenSearch with the geo_point mapping (see 'Creating geo_point index')
     - required and must be done before ANY POSTs to the submit API
@@ -15,7 +20,7 @@
 
 # Updating stack (after initial creation)
 1. Source your python venv
-1. Run `cdk synth` and `cdk deploy` in the backend directory
+1. Run `cdk synth` and `cdk deploy backend` in the backend directory
 
 # Creating geo_point index
 PUT to <opensearch_domain>/wifinetworks with authorization and json body of:

@@ -2,7 +2,7 @@ import json
 import requests
 import boto3
 import os
-from requests_aws4auth import AWS4Auth
+import decimal
 
 # handler for GET with a (lat,lon) coordinate and radius
 
@@ -28,8 +28,8 @@ required_params = ['radius', 'lat', 'lon']
 
 
 def lambda_handler(event, context):
-    print('Request headers', event['headers'])
-    print('Request params', event['queryStringParameters'])
+    print('Request headers: ', event['headers'])
+    print('Request params: ', event['queryStringParameters'])
     print('Search URL: ', search_url)
 
     # response template
@@ -45,6 +45,7 @@ def lambda_handler(event, context):
 
     if(event['queryStringParameters'] is None):
         response['body'] = 'Error: params missing'.format(p=required_params)
+        print('Error: params missing')
         return response
 
     req_params = event['queryStringParameters']
@@ -105,7 +106,8 @@ def lambda_handler(event, context):
 
     # check if opensearch search was successful
     if(search_req.status_code != 200):
-        response['body'] = 'Search encountered an error ({e}})'.format(e=search_req.content)
+        print('Search encountered an error', search_req.content)
+        response['body'] = 'Search encountered an error ({e})'.format(e=search_req.content)
         response['statusCode'] = 500
         return response
 
@@ -129,15 +131,27 @@ def lambda_handler(event, context):
         try:
             dynamo_key['uuid'] = uuid
             ddres = wifinetwork_table.get_item(Key=dynamo_key)
+
+            # get_item returns 200 even for primary keys that don't exist
+            # and the library does not throw an exception!
+            if not 'Item' in ddres.keys():
+                print('UUID {u} does not exist in DynamoDB. Is it a leftover in Opensearch?'.format(u=uuid))
+                continue # skip to next item
+
         except Exception as e:
             # Try to ignore invalid keys (existing in OpenSearch but not Dynamo), but log that they happened
             print('Error retrieving UUID {u} from Dynamo: {e}'.format(u=uuid, e=e))
+            continue # skip to next item
 
-        print(ddres.items())
         item = ddres['Item']
         # json does not know how to serialize Decimal, so convert back to float
-        item['lat'] = float(item['lat'])
-        item['lon'] = float(item['lon'])
+        #item['lat'] = float(item['lat'])
+        #item['lon'] = float(item['lon'])
+
+        for x in item.keys():
+            if type(item[x]) == decimal.Decimal:
+                item[x] = float(item[x])
+
         dynamo_results.append(item)
 
     response['body'] = json.dumps({'results': dynamo_results})
