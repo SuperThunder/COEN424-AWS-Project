@@ -3,7 +3,6 @@ import requests
 import boto3
 import os
 import decimal
-from requests_aws4auth import AWS4Auth
 
 # handler for GET with a (lat,lon) coordinate and radius
 
@@ -150,8 +149,8 @@ def lambda_handler(event, context):
         #item['lon'] = float(item['lon'])
 
         for x in item.keys():
-            if type(x) == decimal.Decimal:
-                item[x] == float(item[x])
+            if type(item[x]) == decimal.Decimal:
+                item[x] = float(item[x])
 
         dynamo_results.append(item)
 
