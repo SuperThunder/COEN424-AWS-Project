@@ -149,7 +149,7 @@ def lambda_handler(event, context):
         #item['lon'] = float(item['lon'])
 
         for x in item.keys():
-            if type(x) == decimal.Decimal:
+            if type(item[x]) == decimal.Decimal:
                 item[x] = float(item[x])
 
         dynamo_results.append(item)
