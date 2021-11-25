@@ -71,6 +71,7 @@ class CicdStack(cdk.Stack):
                     id="Synth",
                     input=github_source,
                     commands=['cd backend', 'npm install -g aws-cdk', 'pip install -r requirements.txt', 'cdk synth'],
+                    # The path to the cdk.out directory, NOT the path to the directory containing cdk.out as with CdkPipeline subdirectory parameter
                     primary_output_directory="backend/cdk.out"
                 ),
                 # Save $1/month by not having artifacts encrypted, however give up cross account deployments
