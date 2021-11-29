@@ -81,7 +81,7 @@ def lambda_handler(event, context):
 
     query_size_limit = int(os.environ['OPENSEARCH_GET_WIFI_NETWORK_LIMIT'])
     query = {
-        # return up 100 results
+        # return up 2000 results
         "size": 2000,
         "query": {
             "bool": {
