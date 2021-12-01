@@ -20,7 +20,7 @@ class BackendStage(cdk.Stage):
     def __init__(self, scope: cdk.Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
-        service = backend_stack.BackendStack(self, 'Project424Backend')
+        service = backend_stack.BackendStack(self, 'Project424Backend', stack_name="backend-Project424Backend")
         #service = BackendStack(self, 'Project424Backend')
 
 
@@ -66,12 +66,13 @@ class CicdStack(cdk.Stack):
                                                                 connection_arn='arn:aws:codestar-connections:us-east-1:391508643370:connection/2520f736-ef67-479d-bea7-78cbffb6fa16')
 
         cdkpipeline = pipelines.CodePipeline(self, 'CDKPipeline', pipeline_name='Project424BackendCDKPipeline',
-                self_mutation=False,
+                self_mutation=True,
                 synth=pipelines.ShellStep(
                     id="Synth",
                     input=github_source,
                     commands=['cd backend', 'npm install -g aws-cdk', 'pip install -r requirements.txt', 'cdk synth'],
-                    primary_output_directory='backend'
+                    # The path to the cdk.out directory, NOT the path to the directory containing cdk.out as with CdkPipeline subdirectory parameter
+                    primary_output_directory="backend/cdk.out"
                 ),
                 # Save $1/month by not having artifacts encrypted, however give up cross account deployments
                 cross_account_keys=False,

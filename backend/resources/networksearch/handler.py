@@ -28,9 +28,9 @@ required_params = ['radius', 'lat', 'lon']
 
 
 def lambda_handler(event, context):
-    print('Request headers: ', event['headers'])
-    print('Request params: ', event['queryStringParameters'])
-    print('Search URL: ', search_url)
+    #print('Request headers: ', event['headers'])
+    #print('Request params: ', event['queryStringParameters'])
+    #print('Search URL: ', search_url)
 
     # response template
     response = {
@@ -81,6 +81,8 @@ def lambda_handler(event, context):
 
     query_size_limit = int(os.environ['OPENSEARCH_GET_WIFI_NETWORK_LIMIT'])
     query = {
+        # return up 2000 results
+        "size": 2000,
         "query": {
             "bool": {
                 "must": {
@@ -135,7 +137,7 @@ def lambda_handler(event, context):
             # get_item returns 200 even for primary keys that don't exist
             # and the library does not throw an exception!
             if not 'Item' in ddres.keys():
-                print('UUID {u} does not exist in DynamoDB. Is it a leftover in Opensearch?'.format(u=uuid))
+                #print('UUID {u} does not exist in DynamoDB. Is it a leftover in Opensearch?'.format(u=uuid))
                 continue # skip to next item
 
         except Exception as e:
